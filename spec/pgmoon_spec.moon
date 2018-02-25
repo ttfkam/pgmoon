@@ -140,6 +140,36 @@ describe "pgmoon with server", ->
             res = assert pg\query [[select * from hello_world limit 2]]
             assert.same {}, res
 
+          it "deletes nothing", ->
+            res = assert pg\query [[delete from hello_world]]
+            assert.same { affected_rows: 0 }, res
+
+          it "update no rows", ->
+            res = assert pg\query [[update "hello_world" SET "name" = 'blahblah']]
+            assert.same { affected_rows: 0 }, res
+
+        describe "with parameterized queries", ->
+          it "inserts a row with parameterized values", ->
+            res = assert pg\query [[
+              insert into "hello_world" ("name", "count") values ($1, $2)
+            ]], "hi", 100
+
+            assert.same { affected_rows: 1 }, res
+
+          it "inserts a row with parameterized values and return value", ->
+            res = assert pg\query [[
+              insert into "hello_world" ("name", "count") values ($1, $2) returning "id"
+            ]], "hi", 100
+
+            assert.same {
+              affected_rows: 1
+              { id: 1 }
+            }, res
+
+          it "update no rows with parameterized value", ->
+            res = assert pg\query [[update "hello_world" SET "name" = $1]], "blahblah"
+            assert.same { affected_rows: 0 }, res
+
           it "selects count as a number", ->
             res = assert pg\query [[select count(*) from hello_world]]
             assert.same {
@@ -149,6 +179,10 @@ describe "pgmoon with server", ->
           it "deletes nothing", ->
             res = assert pg\query [[delete from hello_world]]
             assert.same { affected_rows: 0 }, res
+
+          it "select with null", ->
+            res = assert pg\query [[select $1 AS val]], pg.NULL
+            assert.same 1, #res
 
           it "update no rows", ->
             res = assert pg\query [[update "hello_world" SET "name" = 'blahblah']]
